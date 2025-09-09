@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/logo.svg" alt="GenHive AI" height="72" />
+<img src="public/favicon.ico" alt="GenHive AI" height="72" />
 
 # GenHive AI
 
@@ -9,12 +9,11 @@ AI-assisted content and image tooling for modern creators — fast, secure, and 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
 [![Supabase](https://img.shields.io/badge/Backend-Supabase-3FCF8E)](https://supabase.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](#license)
 
 <br />
 <a href="#quick-start"><b>Quick Start</b></a> •
 <a href="#features"><b>Features</b></a> •
-<a href="#file-structure--architecture"><b>Architecture</b></a> •
+<a href="#file-structure"><b>File Structure</b></a> •
 <a href="#api"><b>API</b></a> •
 <a href="#security"><b>Security</b></a>
 
@@ -50,7 +49,7 @@ Note: The links above navigate to sections within this README—no external page
 - [Features](#features)
 - [File Structure & Architecture](#file-structure--architecture)
 - [Design Principles](#design-principles)
-- [Setup](#setup)
+- [Detailed Setup Guide](#detailed-setup-guide)
 - [Usage](#usage)
 - [Tools](#tools)
 - [API](#api)
@@ -86,22 +85,73 @@ npm run dev
 
 Open the app in your browser (default `http://localhost:3000`).
 
-## File Structure & Architecture
+## File Structure
 
 ```
-src/
-  app/
-    ai/                  # Feature pages (article, titles, images, resume, etc.)
-    api/                 # Serverless API endpoints
-  components/            # UI components (common, dashboard, ui)
-  lib/                   # Services, hooks, validation, utils
+.
+├─ public/
+│  ├─ images/
+│  │  ├─ ai_gen_img_1.png
+│  │  ├─ ai_gen_img_2.png
+│  │  └─ ai_gen_img_3.png
+│  ├─ logo.svg
+│  └─ ...
+├─ src/
+│  ├─ app/
+│  │  ├─ ai/
+│  │  │  ├─ writearticle/page.tsx       # Article UI
+│  │  │  ├─ blogtitles/page.tsx         # Titles UI
+│  │  │  ├─ reviewresume/page.tsx       # Resume review UI
+│  │  │  ├─ generateimage/page.tsx      # Image generation UI
+│  │  │  ├─ removebackground/page.tsx   # Background removal UI
+│  │  │  └─ removeobject/page.tsx       # Object removal UI
+│  │  ├─ api/
+│  │  │  ├─ articles/route.ts           # POST article
+│  │  │  ├─ blogtitles/route.ts         # POST titles
+│  │  │  ├─ reviewresume/route.ts       # POST resume analysis
+│  │  │  ├─ generateimage/route.ts      # POST image generation
+│  │  │  ├─ removebackground/route.ts   # POST background removal
+│  │  │  └─ removeobject/route.ts       # POST object removal
+│  │  └─ layout.tsx / page.tsx          # App layout and landing
+│  ├─ components/
+│  │  ├─ common/
+│  │  │  ├─ ContentViewer.tsx           # Markdown viewer with highlighting
+│  │  │  ├─ CreationItem.tsx            # Activity/history item
+│  │  │  └─ UsageDisplay.tsx            # Usage meter
+│  │  ├─ dashboard/
+│  │  │  ├─ ContentCard.tsx
+│  │  │  ├─ ContentSection.tsx
+│  │  │  ├─ EmptyState.tsx
+│  │  │  ├─ RecentActivitySidebar.tsx
+│  │  │  └─ StatsCards.tsx
+│  │  ├─ Landingpage/
+│  │  │  ├─ Hero.tsx • Navbar.tsx • Sidebar.tsx • AITools.tsx
+│  │  │  └─ Footer.tsx • Testimonial.tsx • ThemeToggle.tsx • Logo.tsx
+│  │  └─ ui/                          # shadcn/ui primitives
+│  │     ├─ alert.tsx • badge.tsx • button.tsx • dialog.tsx
+│  │     ├─ input.tsx • progress.tsx • sheet.tsx • switch.tsx
+│  │     └─ textarea.tsx • toast.tsx • toaster.tsx
+│  ├─ lib/
+│  │  ├─ database/
+│  │  │  ├─ db.ts                      # Supabase client
+│  │  │  ├─ subscription-manager.ts
+│  │  │  └─ user-sync.ts • auto-sync.ts • supabase-utils.ts
+│  │  ├─ middleware/
+│  │  │  ├─ api-wrapper.ts • rate-limiter.ts • security.ts
+│  │  ├─ hooks/                        # useArticleGenerator, useDashboard, etc.
+│  │  ├─ validation/schemas.ts         # Zod schemas
+│  │  ├─ services/                     # user-service, server/client helpers
+│  │  ├─ config/                       # usage-limits, pagination
+│  │  └─ utils.ts • usage-tracker.ts
+│  └─ app/globals.css • tailwind config
+├─ test/
+│  └─ data/05-versions-space.pdf       # Sample test asset
+├─ README.md
+├─ .gitignore • tsconfig.json • package.json • next.config.ts
+└─ supabase-optimized-schema.sql        # Optional: reference schema
 ```
 
-Key directories:
-- `src/app/ai`: Feature routes (`writearticle`, `blogtitles`, `generateimage`, `removebackground`, `removeobject`, `reviewresume`).
-- `src/app/api`: API routes for tools and user/account operations.
-- `src/components/common`: Shared UI (`ContentViewer`, `CreationItem`, `UsageDisplay`).
-- `src/lib`: Database, services (`user-service`), middleware (rate limiting, security), hooks, validation.
+## Architecture
 
 Data flow:
 1) User action in UI → 2) Client calls API → 3) Validate + check limits → 4) Execute AI/image op → 5) Persist/return → 6) Render Markdown/images.
@@ -112,38 +162,7 @@ Cross-cutting concerns:
 - Rate limiting: `src/lib/middleware/rate-limiter.ts`
 - Database: `src/lib/database/*.ts`
 
-Additional structure (selected files):
-```
-src/
-  app/
-    ai/
-      writearticle/page.tsx        # Article UI
-      blogtitles/page.tsx          # Titles UI
-      reviewresume/page.tsx        # Resume review UI
-      generateimage/page.tsx       # Image generation UI
-      removebackground/page.tsx    # BG removal UI
-      removeobject/page.tsx        # Object removal UI
-    api/
-      articles/route.ts            # POST article
-      blogtitles/route.ts          # POST titles
-      reviewresume/route.ts        # POST resume analysis
-      generateimage/route.ts       # POST image gen
-      removebackground/route.ts    # POST bg remove
-      removeobject/route.ts        # POST obj remove
-  components/
-    common/ContentViewer.tsx       # Markdown viewer
-    common/CreationItem.tsx        # History item
-    dashboard/*                    # Dashboard widgets
-    ui/*                           # shadcn components
-  lib/
-    database/db.ts                 # Supabase client
-    middleware/*                   # Rate limiting, security
-    validation/schemas.ts          # Zod schemas
-    hooks/*                        # Client hooks (toasts, usage)
-    services/*                     # Server/client services
-```
-
-High-level architecture:
+Diagram:
 ```mermaid
 flowchart LR
   A[User] --> B[Next.js UI]
@@ -198,62 +217,109 @@ Screenshots (placeholders)
 - Image Generation: `public/images/ai_gen_img_2.png`
 - Dashboard: `public/images/ai_gen_img_3.png`
 
-## Setup
+## Detailed Setup Guide
 
-Prerequisites
-- Node.js LTS, Supabase project (URL, anon/public keys)
+1) Prerequisites
+- Node.js LTS installed
+- Supabase project with access to Project URL and keys
 
-Environment (`.env.local`):
+2) Environment Variables (`.env.local`)
+Create a file named `.env.local` in the project root with:
 ```
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 ```
+Descriptions:
+- `NEXT_PUBLIC_SUPABASE_URL`: Public URL for your Supabase project (used by client and server).
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Public anon key (used by client and server).
+- `SUPABASE_SERVICE_ROLE_KEY`: Service role key for privileged server operations. Do not expose to the client.
 
-Environment variable reference:
-- `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL (public).
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase anon key for client usage (public).
-- `SUPABASE_SERVICE_ROLE_KEY`: Service role key for secure server operations (never exposed to client).
+Optional: Clerk (only if using Clerk for authentication)
+```
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your-clerk-publishable-key
+CLERK_SECRET_KEY=your-clerk-secret-key
+CLERK_SIGN_IN_URL=/sign-in
+CLERK_SIGN_UP_URL=/sign-up
+CLERK_AFTER_SIGN_IN_URL=/
+CLERK_AFTER_SIGN_UP_URL=/
+```
+Descriptions:
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`: Public key used by the frontend to initialize Clerk.
+- `CLERK_SECRET_KEY`: Server-side secret for Clerk APIs/webhooks (never exposed to client).
+- `CLERK_SIGN_IN_URL`, `CLERK_SIGN_UP_URL`: Optional custom routes for auth pages.
+- `CLERK_AFTER_SIGN_IN_URL`, `CLERK_AFTER_SIGN_UP_URL`: Optional post-auth redirect routes.
 
-Environment variables summary
+3) (Optional) Import Database Schema
+- Open Supabase SQL editor, paste contents of `supabase-optimized-schema.sql`, and run.
+- This creates the recommended tables, indexes, and RLS policies.
 
-| Name                         | Required | Scope    | Description                                   |
-|------------------------------|----------|----------|-----------------------------------------------|
-| `NEXT_PUBLIC_SUPABASE_URL`   | Yes      | Client   | Supabase Project URL                          |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes   | Client   | Supabase Anon (Public) Key                    |
-| `SUPABASE_SERVICE_ROLE_KEY`  | Optional | Server   | Service Role Key for privileged operations    |
-
-Install & run
+4) Install & Run Locally
 ```
 npm install
 npm run dev
 ```
+Open `http://localhost:3000`.
 
-Scripts
+Production build & start
 ```
-npm run dev        # start dev server
-npm run build      # production build
-npm run start      # start production server
+npm run build
+npm run start
 ```
+The app will start on the configured port (default 3000).
 
-Common commands
+5) Verify Core Flows
+- Sign up/in → profile creation
+- Use AI tools (Write Article, Blog Titles, Resume Review, Image tools)
+- Check dashboard activity and usage updates
 
-| Command             | Description                      |
-|---------------------|----------------------------------|
-| `npm run dev`       | Start local development server   |
-| `npm run build`     | Build for production             |
-| `npm run start`     | Run production server            |
+6) Deployment (Vercel recommended)
+- Connect repo → set env vars in Vercel → deploy
+- Ensure production Supabase URL/keys are correct
 
-Troubleshooting
-- Ensure `.env.local` is present and keys are correct
-- Check browser console and server logs for API errors
-- Verify Supabase RLS policies if data is not visible
+7) Troubleshooting
+- Missing env: ensure `.env.local` is present and populated
+- API errors: check server logs and network tab
+- Data access issues: verify Supabase RLS policies
 
-Optional: Supabase schema
-- A reference schema is provided in `supabase-optimized-schema.sql`. You can import this into your Supabase project to create tables, indexes, and RLS policies.
+## Detailed Setup Guide
 
-Local testing assets
-- Sample file: `test/data/05-versions-space.pdf` can be used for manual testing flows.
+1) Create a Supabase Project
+- Go to `https://app.supabase.com`, create a project.
+- Obtain the Project URL and Anon/Public Key.
+
+2) Configure Environment Variables
+- Create `.env.local` in the project root with:
+```
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+- Do not expose the Service Role Key to the client; it is server-only.
+
+3) Import the Database Schema (Optional but recommended)
+- Open Supabase SQL editor and paste `supabase-optimized-schema.sql` from the repo.
+- Execute to create tables, indexes, and RLS policies.
+
+4) Run the App Locally
+```
+npm install
+npm run dev
+```
+- Visit `http://localhost:3000`.
+
+5) Verify Core Flows
+- Sign up/sign in; ensure profile is created.
+- Use AI tools (Write Article, Blog Titles, Resume Review, Image tools).
+- Confirm results appear in dashboard activity and usage updates.
+
+6) Optional: Seeding/Fixtures
+- Use `test/data/05-versions-space.pdf` to test upload/processing flows.
+
+7) Deployment
+- Preferred: Vercel. Connect the GitHub repo, set environment variables.
+- Ensure production Supabase URL and keys are configured in Vercel.
+- Trigger a deploy; verify API routes and RLS access in production.
 
 ## Usage
 
@@ -480,14 +546,8 @@ FAQ
 
  
 
-## License
-
-This project is licensed under the MIT License. You may use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, subject to the MIT terms. See the header badge for a quick reference.
-
-
-
 <div align="center">
 
-Built with ❤️ by Pratik using Next.js & Supabase • PRs welcome!
+<sub>Made with ✨, ❤️, and ☕ by <b>Pratik</b> · Powered by <b>Next.js</b> + <b>Supabase</b> · PRs welcome 🚀</sub>
 
 </div>
