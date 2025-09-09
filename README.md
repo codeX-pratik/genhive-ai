@@ -9,7 +9,7 @@ AI-assisted content and image tooling for modern creators — fast, secure, and 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
 [![Supabase](https://img.shields.io/badge/Backend-Supabase-3FCF8E)](https://supabase.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](#license)
 
 <br />
 <a href="#quick-start"><b>Quick Start</b></a> •
@@ -52,12 +52,15 @@ Note: The links above navigate to sections within this README—no external page
 - [Design Principles](#design-principles)
 - [Setup](#setup)
 - [Usage](#usage)
+- [Tools](#tools)
 - [API](#api)
 - [Data Model](#data-model)
 - [Security](#security)
 - [Contributing](#contributing)
 - [Troubleshooting & FAQ](#troubleshooting--faq)
 - [Roadmap](#roadmap)
+ - [Deployment](#deployment)
+ - [Performance & Accessibility](#performance--accessibility)
 
 ## Quick Start
 
@@ -212,6 +215,14 @@ Environment variable reference:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase anon key for client usage (public).
 - `SUPABASE_SERVICE_ROLE_KEY`: Service role key for secure server operations (never exposed to client).
 
+Environment variables summary
+
+| Name                         | Required | Scope    | Description                                   |
+|------------------------------|----------|----------|-----------------------------------------------|
+| `NEXT_PUBLIC_SUPABASE_URL`   | Yes      | Client   | Supabase Project URL                          |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes   | Client   | Supabase Anon (Public) Key                    |
+| `SUPABASE_SERVICE_ROLE_KEY`  | Optional | Server   | Service Role Key for privileged operations    |
+
 Install & run
 ```
 npm install
@@ -224,6 +235,14 @@ npm run dev        # start dev server
 npm run build      # production build
 npm run start      # start production server
 ```
+
+Common commands
+
+| Command             | Description                      |
+|---------------------|----------------------------------|
+| `npm run dev`       | Start local development server   |
+| `npm run build`     | Build for production             |
+| `npm run start`     | Run production server            |
 
 Troubleshooting
 - Ensure `.env.local` is present and keys are correct
@@ -252,6 +271,40 @@ Image Tools
 
 Dashboard & Activity
 - Review recent items, copy outputs, monitor usage quotas
+
+## Tools
+
+All built-in tools and where to use them:
+
+- Write Article
+  - UI: `src/app/ai/writearticle/page.tsx` (navigate: AI → Write Article)
+  - API: `POST /api/articles` (`src/app/api/articles/route.ts`)
+  - Output: Markdown article with headings, lists, quotes, and code
+
+- Blog Titles
+  - UI: `src/app/ai/blogtitles/page.tsx` (navigate: AI → Blog Titles)
+  - API: `POST /api/blogtitles` (`src/app/api/blogtitles/route.ts`)
+  - Output: Multiple SEO-friendly title suggestions
+
+- Resume Review
+  - UI: `src/app/ai/reviewresume/page.tsx` (navigate: AI → Review Resume)
+  - API: `POST /api/reviewresume` (`src/app/api/reviewresume/route.ts`)
+  - Output: Strengths, gaps, missing keywords, and a Markdown summary
+
+- Generate Image
+  - UI: `src/app/ai/generateimage/page.tsx` (navigate: AI → Generate Image)
+  - API: `POST /api/generateimage` (`src/app/api/generateimage/route.ts`)
+  - Output: Generated image URL(s) with metadata
+
+- Remove Background
+  - UI: `src/app/ai/removebackground/page.tsx` (navigate: AI → Remove Background)
+  - API: `POST /api/removebackground` (`src/app/api/removebackground/route.ts`)
+  - Output: Image with background removed
+
+- Remove Object
+  - UI: `src/app/ai/removeobject/page.tsx` (navigate: AI → Remove Object)
+  - API: `POST /api/removeobject` (`src/app/api/removeobject/route.ts`)
+  - Output: Image with selected object(s) removed
 
 ## API
 
@@ -409,12 +462,32 @@ FAQ
 - Advanced image editing (inpainting/outpainting)
 - Improved analytics and usage insights
 
+
 ---
+
+## Deployment
+
+- Recommended: Vercel for Next.js hosting with automatic builds.
+- Configure environment variables in your hosting provider.
+- Ensure Supabase URL/keys set for the production environment.
+
+## Performance & Accessibility
+
+- Static optimization where possible; SSR for API-backed pages.
+- Use `rehype-highlight` only when code blocks are present.
+- Tailwind + shadcn/ui ensures accessible defaults; validate with lighthouse.
+- Optimize images and leverage Next.js `Image` where used.
+
+ 
+
+## License
+
+This project is licensed under the MIT License. You may use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, subject to the MIT terms. See the header badge for a quick reference.
+
+
 
 <div align="center">
 
-Built with ❤️ using Next.js & Supabase • PRs welcome!
+Built with ❤️ by Pratik using Next.js & Supabase • PRs welcome!
 
 </div>
-
-
