@@ -67,8 +67,10 @@ export default function AiLayout({ children }: { children: ReactNode }) {
         )}
 
         {/* Main Content - Add left margin to account for sidebar */}
-        <main className="flex-1 p-4 md:p-6 md:ml-64 transition-all duration-300 overflow-y-auto min-h-[calc(100vh-3.5rem)]">
-          {children}
+        <main className="flex-1 p-4 md:p-6 md:ml-64 transition-all duration-300 h-[calc(100vh-3.5rem)] overflow-hidden">
+          <div className="h-full overflow-y-auto">
+            {children}
+          </div>
         </main>
       </div>
     </div>

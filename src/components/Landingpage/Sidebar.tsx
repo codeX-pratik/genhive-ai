@@ -4,9 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { LogOut } from "lucide-react";
-import { useUser, useClerk, Protect } from "@clerk/nextjs";
+import { useUserService } from "@/lib/services/user-service";
+import { useClerk } from "@clerk/nextjs";
 import Image from "next/image";
 import { sidebarlinks } from "@/lib/asset";
+import { useUserData } from "@/lib/hooks/use-user-data";
 
 interface SidebarProps {
   isMobile?: boolean;
@@ -20,8 +22,13 @@ export default function Sidebar({
   setMobileOpen,
 }: SidebarProps) {
   const pathname = usePathname();
-  const { user, isLoaded } = useUser();
+  const { user, isLoaded } = useUserService();
   const { signOut, openUserProfile } = useClerk();
+  const { user: centralUser, usageInfo, isLoaded: centralLoaded } = useUserData();
+
+  const subscriptionDisplay = !centralLoaded
+    ? "Checking…"
+    : (centralUser?.subscriptionDisplayName || (usageInfo?.subscriptionTier === 'pro' ? 'Premium' : 'Free') || 'Free');
 
   const wrapperClass = isMobile
     ? cn(
@@ -45,16 +52,16 @@ export default function Sidebar({
                 className="w-10 h-10 rounded-full object-cover"
               />
             )}
-            {(user?.username || user?.primaryEmailAddress?.emailAddress) && (
+            {(user?.username || user?.email) && (
               <div className="flex flex-col">
                 {user?.username && (
                   <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
                     {user.username}
                   </span>
                 )}
-                {user?.primaryEmailAddress?.emailAddress && (
+                {user?.email && (
                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {user.primaryEmailAddress.emailAddress}
+                    {user.email}
                   </span>
                 )}
               </div>
@@ -100,18 +107,22 @@ export default function Sidebar({
       {/* Footer: Profile & Sign Out - Fixed at bottom */}
       {isLoaded && user && (
         <div className="w-full border-t p-4 flex items-center justify-between bg-gray-100 dark:bg-gray-800 mt-auto">
-          <div
-            className="flex items-center gap-2 cursor-pointer"
-            onClick={() => openUserProfile()}
-          >
+          <div className="flex items-center gap-2">
             {user.imageUrl && (
-              <Image
-                src={user.imageUrl}
-                alt="Profile"
-                width={30}
-                height={30}
-                className="w-8 h-8 rounded-full object-cover"
-              />
+              <button
+                type="button"
+                onClick={() => openUserProfile()}
+                title="Open profile"
+                className="rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400"
+              >
+                <Image
+                  src={user.imageUrl}
+                  alt="Profile"
+                  width={30}
+                  height={30}
+                  className="w-8 h-8 rounded-full object-cover cursor-pointer"
+                />
+              </button>
             )}
             <div className="flex flex-col">
               {user.username && (
@@ -119,25 +130,18 @@ export default function Sidebar({
                   {user.username}
                 </span>
               )}
-              <Protect
-                plan="premium"
-                fallback={
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Free
-                  </span>
-                }
-              >
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  Premium
-                </span>
-              </Protect>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {subscriptionDisplay}
+              </span>
             </div>
           </div>
 
-          <LogOut
-            onClick={() => signOut()}
-            className="w-6 h-6 text-gray-400 hover:text-gray-700 dark:hover:text-gray-100 cursor-pointer transition-colors"
-          />
+          <div className="flex items-center gap-2">
+            <LogOut
+              onClick={() => signOut()}
+              className="w-6 h-6 text-gray-400 hover:text-gray-700 dark:hover:text-gray-100 cursor-pointer transition-colors"
+            />
+          </div>
         </div>
       )}
     </div>
