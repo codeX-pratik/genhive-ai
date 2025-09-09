@@ -61,7 +61,6 @@ export async function POST(request: NextRequest) {
 
     if (!clipdropResponse.ok) {
       const status = clipdropResponse.status;
-      const errorText = await clipdropResponse.text().catch(() => '');
       const friendly = status === 404
         ? 'Object removal endpoint not available. Verify your Clipdrop plan and endpoint.'
         : `Clipdrop error (${status}). Please try again later.`;
