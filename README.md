@@ -1,8 +1,9 @@
 <div align="center">
 
-<img src="public/favicon.ico" alt="GenHive AI" height="72" />
-
-# GenHive AI
+<h1 style="display: inline-flex; align-items: center; gap: 10px; margin: 0;">
+  <img src="public/favicon.ico" alt="GenHive AI" height="36" />
+  <span>GenHive AI</span>
+</h1>
 
 AI-assisted content and image tooling for modern creators — fast, secure, and elegant.
 
