@@ -145,8 +145,8 @@ Open the app in your browser (default `http://localhost:3000`).
 │  │  ├─ config/                       # usage-limits, pagination
 │  │  └─ utils.ts • usage-tracker.ts
 │  └─ app/globals.css • tailwind config
-├─ test/
-│  └─ data/05-versions-space.pdf       # Sample test asset
+├─ patches/
+│  └─ pdf-parse+1.1.1.patch          # PDF parsing fix for serverless deployment
 ├─ README.md
 ├─ .gitignore • tsconfig.json • package.json • next.config.ts
 └─ supabase-optimized-schema.sql        # Optional: reference schema
@@ -277,11 +277,13 @@ The app will start on the configured port (default 3000).
 6) Deployment (Vercel recommended)
 - Connect repo → set env vars in Vercel → deploy
 - Ensure production Supabase URL/keys are correct
+- PDF parsing is automatically fixed for serverless deployment via patches
 
 7) Troubleshooting
 - Missing env: ensure `.env.local` is present and populated
 - API errors: check server logs and network tab
 - Data access issues: verify Supabase RLS policies
+- PDF parsing errors: ensure `patches/pdf-parse+1.1.1.patch` is committed and `postinstall` script runs
 
 ## Detailed Setup Guide
 
@@ -314,13 +316,14 @@ npm run dev
 - Use AI tools (Write Article, Blog Titles, Resume Review, Image tools).
 - Confirm results appear in dashboard activity and usage updates.
 
-6) Optional: Seeding/Fixtures
-- Use `test/data/05-versions-space.pdf` to test upload/processing flows.
+6) Deployment (Vercel Recommended)
+- Connect your GitHub repo to Vercel
+- Set all environment variables in Vercel dashboard
+- Ensure production Supabase URL and keys are configured
+- The `patches/` folder will automatically apply PDF parsing fixes during build
+- Deploy and verify all API routes work in production
 
-7) Deployment
-- Preferred: Vercel. Connect the GitHub repo, set environment variables.
-- Ensure production Supabase URL and keys are configured in Vercel.
-- Trigger a deploy; verify API routes and RLS access in production.
+**Important**: The `patches/pdf-parse+1.1.1.patch` file fixes PDF parsing issues in serverless environments. This patch is automatically applied during deployment.
 
 ## Usage
 
@@ -514,6 +517,7 @@ Common issues
 - 401/403 from API: Check Supabase keys and RLS policies.
 - Empty results: Verify rate limits and input validation errors in logs.
 - Markdown not rendering: Ensure `react-markdown` and `remark-gfm` are installed and viewer is used.
+- PDF parsing fails in production: Ensure `patches/pdf-parse+1.1.1.patch` is committed and `postinstall` script runs during deployment.
 
 FAQ
 - Q: Can I add a new AI tool? 
@@ -522,6 +526,10 @@ FAQ
   A: See `src/lib/config/usage-limits.ts` and related middleware.
 - Q: How do I change prose styles?
   A: Adjust Tailwind prose classes in viewers like `ContentViewer.tsx`.
+- Q: Why does PDF parsing fail in Vercel but work locally?
+  A: The `pdf-parse` library has debug mode issues in serverless environments. The included patch fixes this automatically.
+- Q: Do I need to keep the patches folder?
+  A: Yes! The `patches/` folder contains essential fixes for serverless deployment and must be committed to your repository.
 
 ## Roadmap
 - Add more export formats (PDF/Docx)
@@ -534,9 +542,32 @@ FAQ
 
 ## Deployment
 
-- Recommended: Vercel for Next.js hosting with automatic builds.
-- Configure environment variables in your hosting provider.
-- Ensure Supabase URL/keys set for the production environment.
+- **Recommended**: Vercel for Next.js hosting with automatic builds
+- Configure environment variables in your hosting provider
+- Ensure Supabase URL/keys set for the production environment
+- **Important**: The `patches/pdf-parse+1.1.1.patch` file automatically fixes PDF parsing issues in serverless environments
+- The `postinstall` script ensures patches are applied during deployment
+
+## PDF Parsing Fix for Serverless Deployment
+
+### The Problem
+The `pdf-parse` library has a known issue in serverless environments (like Vercel) where it tries to access test files that don't exist, causing PDF parsing to fail with "failed to parse PDF" errors.
+
+### The Solution
+This project includes a patch (`patches/pdf-parse+1.1.1.patch`) that:
+- Disables debug mode in `pdf-parse` to prevent filesystem access
+- Ensures PDF parsing works in both development and production
+- Is automatically applied during deployment via the `postinstall` script
+
+### Files Involved
+- `patches/pdf-parse+1.1.1.patch` - The patch file (must be committed)
+- `package.json` - Contains `postinstall` script to apply patches
+- `src/app/api/reviewresume/route.ts` - Updated with serverless-friendly PDF parsing
+
+### Important Notes
+- ✅ **Keep the `patches/` folder** - It's essential for production deployment
+- ✅ **Commit the patch file** - It must be in your repository
+- ✅ **The fix is automatic** - No manual intervention needed during deployment
 
 ## Performance & Accessibility
 

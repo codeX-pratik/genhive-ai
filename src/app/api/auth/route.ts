@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAPIRoute, createSuccessResponse, commonAPIConfigs } from "@/lib/middleware/api-wrapper";
 import { SupabaseService } from "@/lib/database/supabase-utils";
 import { SupabaseUsageRecord } from "@/lib/types/supabase";
-import { getUsageLimitsFromEnv } from "@/lib/config/usage-limits";
+import { getUsageLimitsFromEnv, getTestMaxFlag } from "@/lib/config/usage-limits";
+import { UsageTracker } from "@/lib/usage-tracker";
 
 // Free usage limits per day
 const FREE_USAGE_LIMITS = getUsageLimitsFromEnv().free;
@@ -21,7 +22,7 @@ interface UsageCheckResponse {
   resetTime?: string;
 }
 
-// Check if user can perform an AI action (free usage tracking)
+// Check if user can perform an AI action (with test mode support)
 async function handleUsageCheck(request: NextRequest): Promise<NextResponse> {
   try {
     const body: UsageCheckRequest = await request.json();
@@ -41,37 +42,14 @@ async function handleUsageCheck(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const limit = FREE_USAGE_LIMITS[action];
-    const today = new Date().toISOString().split('T')[0];
-
-    const { data: usageData, error: usageError } = await SupabaseService.selectWithServiceRole(
-      'user_usage',
-      'usage_count',
-      { 
-        user_id: userId, 
-        action_type: action, 
-        date: today 
-      }
-    );
-
-    if (usageError && usageError.code !== 'PGRST116') {
-      throw usageError;
-    }
-
-    const currentUsage = (usageData as unknown as SupabaseUsageRecord[])?.[0]?.usage_count || 0;
-    const remaining = Math.max(0, limit - currentUsage);
-    const allowed = remaining > 0;
-
-    const tomorrow = new Date();
-    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-    tomorrow.setUTCHours(0, 0, 0, 0);
-    const resetTime = tomorrow.toISOString();
+    // Use UsageTracker which includes test mode support
+    const usageCheck = await UsageTracker.checkUsage(userId, action as any);
 
     const response: UsageCheckResponse = {
-      allowed,
-      remaining,
-      limit,
-      resetTime
+      allowed: usageCheck.allowed,
+      remaining: usageCheck.remaining,
+      limit: usageCheck.limit,
+      resetTime: usageCheck.resetTime
     };
 
     return createSuccessResponse(response);
@@ -84,7 +62,7 @@ async function handleUsageCheck(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-// Record usage after an AI action is performed
+// Record usage after an AI action is performed (with test mode support)
 async function handleUsageRecord(request: NextRequest): Promise<NextResponse> {
   try {
     const body: UsageCheckRequest = await request.json();
@@ -104,40 +82,13 @@ async function handleUsageRecord(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const today = new Date().toISOString().split('T')[0];
-
-    const { data: existingUsage, error: checkError } = await SupabaseService.selectWithServiceRole(
-      'user_usage',
-      'id, usage_count',
-      { 
-        user_id: userId, 
-        action_type: action, 
-        date: today 
-      }
-    );
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      throw checkError;
+    // Skip recording usage in test mode
+    if (getTestMaxFlag()) {
+      return createSuccessResponse({ success: true });
     }
 
-    if (existingUsage && existingUsage.length > 0) {
-      const { error: updateError } = await SupabaseService.updateWithServiceRole(
-        'user_usage',
-        { usage_count: (existingUsage as unknown as SupabaseUsageRecord[])[0].usage_count + 1 },
-        { id: (existingUsage as unknown as SupabaseUsageRecord[])[0].id }
-      );
-
-      if (updateError) throw updateError;
-    } else {
-      const { error: insertError } = await SupabaseService.insertWithServiceRole('user_usage', {
-        user_id: userId,
-        action_type: action,
-        date: today,
-        usage_count: 1
-      });
-
-      if (insertError) throw insertError;
-    }
+    // Use UsageTracker for recording usage
+    await UsageTracker.recordUsage(userId, action as any);
 
     return createSuccessResponse({ success: true });
 
@@ -149,7 +100,7 @@ async function handleUsageRecord(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-// Get user's current usage stats
+// Get user's current usage stats (with test mode support)
 async function handleGetUsageStats(request: NextRequest): Promise<NextResponse> {
   try {
     const authHeader = request.headers.get('authorization');
@@ -160,6 +111,24 @@ async function handleGetUsageStats(request: NextRequest): Promise<NextResponse> 
         { error: "Missing userId" },
         { status: 400 }
       );
+    }
+
+    // Return unlimited usage in test mode
+    if (getTestMaxFlag()) {
+      const usageStats = Object.keys(FREE_USAGE_LIMITS).map(action => {
+        const actionType = action as AIActionType;
+        return {
+          action: actionType,
+          used: 0,
+          limit: 1000000000,
+          remaining: 1000000000
+        };
+      });
+
+      return createSuccessResponse({
+        usage: usageStats,
+        resetTime: new Date().toISOString()
+      });
     }
 
     const today = new Date().toISOString().split('T')[0];

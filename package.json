@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.31.3",
@@ -55,6 +56,7 @@
     "@types/react-dom": "^18.3.1",
     "eslint": "^9",
     "eslint-config-next": "15.4.7",
+    "patch-package": "^8.0.0",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.7",
     "typescript": "^5"

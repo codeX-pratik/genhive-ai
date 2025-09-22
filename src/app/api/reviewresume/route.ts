@@ -112,34 +112,63 @@ export async function POST(request: NextRequest) {
     // Parse PDF content
     let extractedText: string;
     try {
+      // Validate PDF signature again
       const uint8Array = new Uint8Array(fileBuffer);
       const pdfSignature = uint8Array.slice(0, 4);
-      Array.from(pdfSignature).map(b => String.fromCharCode(b)).join('');
+      const isPDFValid = pdfSignature[0] === 0x25 && pdfSignature[1] === 0x50 && pdfSignature[2] === 0x44 && pdfSignature[3] === 0x46;
 
-      if (!isPDF) {
+      if (!isPDFValid) {
         throw new Error('Invalid PDF file format - missing PDF signature');
       }
 
-      const fs = await import('fs');
-      const path = await import('path');
-      const testDir = path.join(process.cwd(), 'test', 'data');
-      if (!fs.existsSync(testDir)) {
-        fs.mkdirSync(testDir, { recursive: true });
-      }
-      const testFilePath = path.join(testDir, '05-versions-space.pdf');
-      if (!fs.existsSync(testFilePath)) {
-        fs.writeFileSync(testFilePath, Buffer.from('%PDF-1.4\n%dummy'));
-      }
-
+      // Use pdf-parse with proper error handling for serverless environment
       const pdfParse = await import('pdf-parse');
       const pdf = pdfParse.default;
-      const pdfData = await pdf(Buffer.from(fileBuffer));
+      
+      // Create buffer from file data
+      const pdfBuffer = Buffer.from(fileBuffer);
+      
+      // Configure pdf-parse for serverless environment
+      const pdfOptions = {
+        // Disable debug mode to prevent file system access issues in serverless
+        isDebugMode: false,
+        // Set max buffer size to prevent memory issues
+        max: 0
+      };
+      
+      // Add timeout to prevent hanging in serverless environment
+      const pdfData = await Promise.race([
+        pdf(pdfBuffer, pdfOptions),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('PDF parsing timeout')), 30000)
+        )
+      ]) as any;
+      
       extractedText = pdfData.text;
 
       if (!(extractedText && extractedText.trim().length > 0)) {
-        throw new Error('No text extracted with pdf-parse');
+        throw new Error('No text extracted from PDF - file may be image-based or corrupted');
       }
-    } catch {
+    } catch (error) {
+      console.error('PDF parsing error:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        fileSize: file.size,
+        fileType: file.type,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Provide more specific error messages based on the error type
+      if (error instanceof Error) {
+        if (error.message.includes('timeout')) {
+          throw new Error('PDF parsing timed out. The file may be too large or complex.');
+        } else if (error.message.includes('Invalid PDF')) {
+          throw new Error('Invalid PDF file format. Please ensure the file is a valid PDF.');
+        } else if (error.message.includes('No text extracted')) {
+          throw new Error('No readable text found in the PDF. The file may be image-based or corrupted.');
+        }
+      }
+      
       throw new Error('Failed to parse PDF file. Please ensure the file is a valid PDF with readable text and is not password-protected.');
     }
 
