@@ -43,7 +43,7 @@ async function handleUsageCheck(request: NextRequest): Promise<NextResponse> {
     }
 
     // Use UsageTracker which includes test mode support
-    const usageCheck = await UsageTracker.checkUsage(userId, action as any);
+    const usageCheck = await UsageTracker.checkUsage(userId, action as AIActionType);
 
     const response: UsageCheckResponse = {
       allowed: usageCheck.allowed,
@@ -88,7 +88,7 @@ async function handleUsageRecord(request: NextRequest): Promise<NextResponse> {
     }
 
     // Use UsageTracker for recording usage
-    await UsageTracker.recordUsage(userId, action as any);
+    await UsageTracker.recordUsage(userId, action as AIActionType);
 
     return createSuccessResponse({ success: true });
 

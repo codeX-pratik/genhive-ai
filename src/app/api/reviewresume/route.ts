@@ -139,10 +139,10 @@ export async function POST(request: NextRequest) {
       // Add timeout to prevent hanging in serverless environment
       const pdfData = await Promise.race([
         pdf(pdfBuffer, pdfOptions),
-        new Promise((_, reject) => 
+        new Promise<never>((_, reject) => 
           setTimeout(() => reject(new Error('PDF parsing timeout')), 30000)
         )
-      ]) as any;
+      ]) as { text: string };
       
       extractedText = pdfData.text;
 
