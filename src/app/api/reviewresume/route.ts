@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+export const runtime = 'nodejs';
 import OpenAI from "openai";
 import { UsageTracker } from "@/lib/usage-tracker";
 import { SupabaseService } from "@/lib/database/supabase-utils";
@@ -158,18 +159,56 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString()
       });
       
-      // Provide more specific error messages based on the error type
-      if (error instanceof Error) {
-        if (error.message.includes('timeout')) {
-          throw new Error('PDF parsing timed out. The file may be too large or complex.');
-        } else if (error.message.includes('Invalid PDF')) {
-          throw new Error('Invalid PDF file format. Please ensure the file is a valid PDF.');
-        } else if (error.message.includes('No text extracted')) {
-          throw new Error('No readable text found in the PDF. The file may be image-based or corrupted.');
+      // Fallback: try parsing with pdfjs-dist if pdf-parse failed
+      try {
+        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+        // In Node runtime, disable worker
+        // @ts-ignore - types for GlobalWorkerOptions may not be available in this import path
+        pdfjsLib.GlobalWorkerOptions.workerSrc = undefined;
+
+        const loadingTask = pdfjsLib.getDocument({
+          data: new Uint8Array(fileBuffer),
+          disableFontFace: true,
+          useSystemFonts: true,
+          isEvalSupported: false,
+          stopAtErrors: true,
+          disableRange: true,
+          disableAutoFetch: true,
+          disableStream: true,
+        });
+        const doc = await loadingTask.promise;
+        let combinedText = '';
+        for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
+          const page = await doc.getPage(pageNum);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items
+            .map((item: any) => (
+              typeof (item as { str?: string }).str === 'string' ? (item as { str: string }).str : ''
+            ))
+            .join(' ');
+          combinedText += (pageNum > 1 ? '\n\n' : '') + pageText;
         }
+        extractedText = (combinedText || '').trim();
+        if (!(extractedText && extractedText.length > 0)) {
+          throw new Error('No text extracted with pdfjs');
+        }
+      } catch (fallbackError) {
+        console.error('PDF parsing fallback (pdfjs) error:', {
+          error: fallbackError instanceof Error ? fallbackError.message : 'Unknown error',
+        });
+        // Provide more specific error messages based on the error type
+        if (error instanceof Error) {
+          if (error.message.includes('timeout')) {
+            throw new Error('PDF parsing timed out. The file may be too large or complex.');
+          } else if (error.message.includes('Invalid PDF')) {
+            throw new Error('Invalid PDF file format. Please ensure the file is a valid PDF.');
+          } else if (error.message.includes('No text extracted')) {
+            throw new Error('No readable text found in the PDF. The file may be image-based or corrupted.');
+          }
+        }
+        
+        throw new Error('Failed to parse PDF file. Please ensure the file is a valid PDF with readable text and is not password-protected.');
       }
-      
-      throw new Error('Failed to parse PDF file. Please ensure the file is a valid PDF with readable text and is not password-protected.');
     }
 
     const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
