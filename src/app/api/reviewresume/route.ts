@@ -161,9 +161,10 @@ export async function POST(request: NextRequest) {
       
       // Fallback: try parsing with pdfjs-dist if pdf-parse failed
       try {
-        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+        // Use the main pdfjs-dist entry to avoid bundling issues in serverless
+        const pdfjsLib = await import('pdfjs-dist');
         // In Node runtime, disable worker
-        // @ts-expect-error GlobalWorkerOptions might not be typed in this build import
+        // @ts-expect-error GlobalWorkerOptions typing differs between builds
         pdfjsLib.GlobalWorkerOptions.workerSrc = undefined;
 
         const loadingTask = pdfjsLib.getDocument({
@@ -198,12 +199,15 @@ export async function POST(request: NextRequest) {
           error: fallbackError instanceof Error ? fallbackError.message : 'Unknown error',
         });
         // Provide more specific error messages based on the error type
-        if (error instanceof Error) {
-          if (error.message.includes('timeout')) {
+        const message = (fallbackError as Error)?.message || (error as Error)?.message || '';
+        if (message) {
+          if (message.toLowerCase().includes('timeout')) {
             throw new Error('PDF parsing timed out. The file may be too large or complex.');
-          } else if (error.message.includes('Invalid PDF')) {
+          } else if (message.toLowerCase().includes('password')) {
+            throw new Error('This PDF appears to be password-protected. Please remove the password and try again.');
+          } else if (message.includes('Invalid PDF') || message.toLowerCase().includes('invalidpdf')) {
             throw new Error('Invalid PDF file format. Please ensure the file is a valid PDF.');
-          } else if (error.message.includes('No text extracted')) {
+          } else if (message.toLowerCase().includes('no text')) {
             throw new Error('No readable text found in the PDF. The file may be image-based or corrupted.');
           }
         }
