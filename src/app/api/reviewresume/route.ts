@@ -161,8 +161,8 @@ export async function POST(request: NextRequest) {
       
       // Fallback: try parsing with pdfjs-dist if pdf-parse failed
       try {
-        // Use the main pdfjs-dist entry to avoid bundling issues in serverless
-        const pdfjsLib = await import('pdfjs-dist');
+        // Use the legacy build in Node runtimes
+        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
         // In Node runtime, disable worker
         // @ts-expect-error GlobalWorkerOptions typing differs between builds
         pdfjsLib.GlobalWorkerOptions.workerSrc = undefined;
