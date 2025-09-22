@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
       try {
         const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
         // In Node runtime, disable worker
-        // @ts-ignore - types for GlobalWorkerOptions may not be available in this import path
+        // @ts-expect-error GlobalWorkerOptions might not be typed in this build import
         pdfjsLib.GlobalWorkerOptions.workerSrc = undefined;
 
         const loadingTask = pdfjsLib.getDocument({
@@ -182,9 +182,10 @@ export async function POST(request: NextRequest) {
           const page = await doc.getPage(pageNum);
           const textContent = await page.getTextContent();
           const pageText = textContent.items
-            .map((item: any) => (
-              typeof (item as { str?: string }).str === 'string' ? (item as { str: string }).str : ''
-            ))
+            .map((item: unknown) => {
+              const text = (item as { str?: unknown }).str;
+              return typeof text === 'string' ? text : '';
+            })
             .join(' ');
           combinedText += (pageNum > 1 ? '\n\n' : '') + pageText;
         }
